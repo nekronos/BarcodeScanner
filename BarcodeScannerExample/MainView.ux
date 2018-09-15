@@ -1,0 +1,28 @@
+<App>
+	<ClientPanel>
+		<DockPanel>
+			<JavaScript>
+				var BarcodeScanner = barcodeScanner
+				function scan() {
+					BarcodeScanner
+						.scan()
+						.then(function (result) {
+							console.log("Success: " + result)
+						})
+						.catch(function (err) {
+							console.log("Failed: " + err)
+						})
+				}
+				module.exports = {
+					scan: scan
+				}
+			</JavaScript>
+			<NativeViewHost Dock="Fill">
+				<BarcodeScanner ux:Name="barcodeScanner" />
+			</NativeViewHost>
+			<StackPanel Dock="Bottom">
+				<Button Text="Scan" Clicked="{scan}" />
+			</StackPanel>
+		</DockPanel>
+	</ClientPanel>
+</App>

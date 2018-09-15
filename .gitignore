@@ -1,0 +1,5 @@
+build
+.build
+.uno
+.cache
+.DS_Store

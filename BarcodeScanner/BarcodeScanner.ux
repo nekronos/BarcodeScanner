@@ -1,0 +1,4 @@
+<Fuse.Controls.BarcodeScannerBase ux:Class="Fuse.Controls.BarcodeScanner">
+	<Fuse.Controls.Native.iOS.BarcodeScanner ux:Template="iOSAppearance" />
+	<Fuse.Controls.Native.Android.BarcodeScanner ux:Template="AndroidAppearance" />
+</Fuse.Controls.BarcodeScannerBase>
