@@ -77,7 +77,7 @@ namespace Fuse.Controls.Native.Android
 		[Foreign(Language.Java)]
 		static Java.Object Create()
 		@{
-			return new ZXingScannerView(com.apps.barcodescannerexample.BarcodeScannerExample.GetRootActivity());
+			return new ZXingScannerView(@(Activity.Package).@(Activity.Name).GetRootActivity());
 		@}
 	}
 
