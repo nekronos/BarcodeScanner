@@ -23,19 +23,39 @@ namespace Fuse.Controls.Native.Android
 		class ScanPromise : Promise<string>
 		{
 			readonly Java.Object _scannerView;
+			readonly Java.Object _resultHandler;
 			readonly BarcodeScanner _barcodeScanner;
 
 			public ScanPromise(BarcodeScanner barcodeScanner, Java.Object scannerView)
 			{
 				_barcodeScanner = barcodeScanner;
 				_scannerView = scannerView;
+				_resultHandler = CreateResultHandler(OnGotResult);
 
 				Permissions.Request(new PlatformPermission[] { Permissions.Android.CAMERA }).Then(DoScan, Reject);
+				Fuse.Platform.Lifecycle.EnteringForeground += OnEnteringForeground;
+				Fuse.Platform.Lifecycle.EnteringBackground += OnEnteringBackground;
+			}
+
+			bool _inForeground = true;
+			void OnEnteringBackground(Fuse.Platform.ApplicationState s)
+			{
+				if (!_inForeground)
+					return;
+				_inForeground = false;
+			}
+
+			void OnEnteringForeground(Fuse.Platform.ApplicationState s)
+			{
+				if (_inForeground)
+					return;
+				_inForeground = true;
+				_scannerView.ResumeCameraPreview(_resultHandler);
 			}
 
 			void DoScan(PlatformPermission[] permission)
 			{
-				_scannerView.InstallResultHandler(OnGotResult);
+				_scannerView.InstallResultHandler(_resultHandler);
 				_scannerView.StartCamera();
 			}
 
@@ -44,6 +64,8 @@ namespace Fuse.Controls.Native.Android
 				_barcodeScanner._scanningSession = null;
 				_scannerView.StopCamera();
 				_scannerView.RemoveResultHandler();
+				Fuse.Platform.Lifecycle.EnteringForeground -= OnEnteringForeground;
+				Fuse.Platform.Lifecycle.EnteringBackground -= OnEnteringBackground;
 				Resolve(code);
 			}
 		}
@@ -79,6 +101,16 @@ namespace Fuse.Controls.Native.Android
 		@{
 			return new ZXingScannerView(@(Activity.Package).@(Activity.Name).GetRootActivity());
 		@}
+
+		[Foreign(Language.Java)]
+		static Java.Object CreateResultHandler(Action<string> handler)
+		@{
+			return new ZXingScannerView.ResultHandler() {
+				public void handleResult(Result result) {
+					handler.run(result.getText());
+				}
+			};
+		@}
 	}
 
 	[Require("Gradle.Dependency.Compile", "me.dm7.barcodescanner:zxing:1.8.4")]
@@ -101,15 +133,15 @@ namespace Fuse.Controls.Native.Android
 		@}
 
 		[Foreign(Language.Java)]
-		public static void InstallResultHandler(
-			this Java.Object scannerViewHandle,
-			Action<string> resultHandler)
+		public static void ResumeCameraPreview(this Java.Object handle, Java.Object resultHandler)
 		@{
-			((ZXingScannerView)scannerViewHandle).setResultHandler(new ZXingScannerView.ResultHandler() {
-					public void handleResult(Result result) {
-						resultHandler.run(result.getText());
-					}
-				});
+			((ZXingScannerView)handle).resumeCameraPreview((ZXingScannerView.ResultHandler)resultHandler);
+		@}
+
+		[Foreign(Language.Java)]
+		public static void InstallResultHandler(this Java.Object scannerViewHandle, Java.Object resultHandler)
+		@{
+			((ZXingScannerView)scannerViewHandle).setResultHandler((ZXingScannerView.ResultHandler)resultHandler);
 		@}
 
 		[Foreign(Language.Java)]
