@@ -99,7 +99,19 @@ namespace Fuse.Controls.Native.Android
 		[Foreign(Language.Java)]
 		static Java.Object Create()
 		@{
-			return new ZXingScannerView(@(Activity.Package).@(Activity.Name).GetRootActivity());
+			class EmptyViewFinder extends android.view.View implements IViewFinder {
+				public EmptyViewFinder(Context context) { super(context); }
+				public void setupViewFinder() {}
+				public Rect getFramingRect() {
+					return new Rect(0, 0, getWidth(), getHeight());
+				}
+			}
+			return new ZXingScannerView(@(Activity.Package).@(Activity.Name).GetRootActivity()) {
+				@Override
+				protected IViewFinder createViewFinderView(Context context) {
+					return new EmptyViewFinder(context);
+				}
+			};
 		@}
 
 		[Foreign(Language.Java)]
