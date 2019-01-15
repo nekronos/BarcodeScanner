@@ -13,8 +13,14 @@
 							console.log("Failed: " + err)
 						})
 				}
+
+				function toggleFlash() {
+					BarcodeScanner.toggleFlash();
+				}
+
 				module.exports = {
-					scan: scan
+					scan: scan,
+					toggleFlash: toggleFlash,
 				}
 			</JavaScript>
 			<NativeViewHost Dock="Fill">
@@ -22,6 +28,7 @@
 			</NativeViewHost>
 			<StackPanel Dock="Bottom">
 				<Button Text="Scan" Clicked="{scan}" />
+				<Button Text="Toggle flashlight" Clicked="{toggleFlash}" />
 			</StackPanel>
 		</DockPanel>
 	</ClientPanel>
