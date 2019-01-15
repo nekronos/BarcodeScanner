@@ -45,6 +45,7 @@ namespace Fuse.Controls.Native.iOS
 			public void Freeze() { Freeze(_handle); }
 			public void Unfreeze() { Unfreeze(_handle); }
 			public bool StartScanning(out string errorMessage) { return StartScanningImpl(_handle, out errorMessage); }
+			public void ToggleFlash() { ToggleFlash(_handle); }
 
 			[Foreign(Language.ObjC)]
 			static void Freeze(ObjC.Object scannerHandle)
@@ -86,6 +87,13 @@ namespace Fuse.Controls.Native.iOS
 	                    resultHandler(codes.firstObject.stringValue);
 	                }
 	            };
+			@}
+
+			[Foreign(Language.ObjC)]
+			static void ToggleFlash(ObjC.Object scannerHandle)
+			@{
+				MTBBarcodeScanner* scanner = (MTBBarcodeScanner*)scannerHandle;
+				[scanner toggleTorch];
 			@}
 		}
 
@@ -145,6 +153,11 @@ namespace Fuse.Controls.Native.iOS
 					return new Promise<string>().RejectWithMessage(error);
 			}
 			return new ScanPromise(this, _scanner);
+		}
+
+		void IBarcodeScannerView.ToggleFlash()
+		{
+			_scanner.ToggleFlash();
 		}
 
 		public override void Dispose()
