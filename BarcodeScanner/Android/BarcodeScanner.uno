@@ -91,6 +91,11 @@ namespace Fuse.Controls.Native.Android
 			return session;
 		}
 
+		void IBarcodeScannerView.ToggleFlash()
+		{
+			_scannerView.ToggleFlash();
+		}
+
 		public override void Dispose()
 		{
 			base.Dispose();
@@ -160,6 +165,12 @@ namespace Fuse.Controls.Native.Android
 		public static void RemoveResultHandler(this Java.Object scannerViewHandle)
 		@{
 			((ZXingScannerView)scannerViewHandle).setResultHandler(null);
+		@}
+
+		[Foreign(Language.Java)]
+		public static void ToggleFlash(this Java.Object scannerViewHandle)
+		@{
+			((ZXingScannerView)scannerViewHandle).toggleFlash();	
 		@}
 	}
 }
