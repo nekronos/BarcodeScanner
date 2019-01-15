@@ -10,7 +10,7 @@ namespace Fuse.Controls.Native.Android
 {
 	extern(!ANDROID) public class BarcodeScanner {}
 
-	[Require("Gradle.Dependency.Compile", "me.dm7.barcodescanner:zxing:1.8.4")]
+	[Require("Gradle.Dependency.Compile", "me.dm7.barcodescanner:zxing:1.9.1")]
 	[Require("AndroidManifest.Permission", "android.permission.CAMERA")]
 	[ForeignInclude(Language.Java,
 		"me.dm7.barcodescanner.zxing.ZXingScannerView",
