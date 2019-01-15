@@ -17,12 +17,18 @@ namespace Fuse.Controls
 		static BarcodeScannerBase()
 		{
 			ScriptClass.Register(typeof(BarcodeScannerBase),
-				new ScriptPromise<BarcodeScannerBase,string,object>("scan", ExecutionThread.MainThread, scan));
+				new ScriptPromise<BarcodeScannerBase,string,object>("scan", ExecutionThread.MainThread, scan),
+				new ScriptMethod<BarcodeScannerBase>("toggleFlash", toggleFlash));
 		}
 
 		static Future<string> scan(Context context, BarcodeScannerBase self, object[] args)
 		{
 			return self.Scan();
+		}
+
+		static void toggleFlash(BarcodeScannerBase self, object[] args)
+		{
+			self.ToggleFlash();
 		}
 	}
 }

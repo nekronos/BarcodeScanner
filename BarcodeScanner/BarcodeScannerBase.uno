@@ -4,9 +4,11 @@ using Uno.Threading;
 
 namespace Fuse.Controls
 {
+
 	interface IBarcodeScannerView
 	{
 		Future<string> Scan();
+		void ToggleFlash();
 	}
 
 	public abstract partial class BarcodeScannerBase : Panel
@@ -22,6 +24,13 @@ namespace Fuse.Controls
 				p.Reject(new Exception("Native view not initialized!"));
 				return p;
 			}
+		}
+
+		public void ToggleFlash()
+		{
+			var view = BarcodeScannerView;
+			if (view != null)
+				view.ToggleFlash();
 		}
 
 		IBarcodeScannerView BarcodeScannerView
