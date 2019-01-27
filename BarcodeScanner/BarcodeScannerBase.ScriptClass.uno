@@ -18,7 +18,9 @@ namespace Fuse.Controls
 		{
 			ScriptClass.Register(typeof(BarcodeScannerBase),
 				new ScriptPromise<BarcodeScannerBase,string,object>("scan", ExecutionThread.MainThread, scan),
-				new ScriptMethod<BarcodeScannerBase>("toggleFlash", toggleFlash));
+				new ScriptMethod<BarcodeScannerBase>("setFlashlightEnabled", setFlashlightEnabled),
+				new ScriptMethod<BarcodeScannerBase>("getFlashlightEnabled", getFlashlightEnabled)
+			);
 		}
 
 		static Future<string> scan(Context context, BarcodeScannerBase self, object[] args)
@@ -26,9 +28,14 @@ namespace Fuse.Controls
 			return self.Scan();
 		}
 
-		static void toggleFlash(BarcodeScannerBase self, object[] args)
+		static void setFlashlightEnabled(BarcodeScannerBase self, object[] args)
 		{
-			self.ToggleFlash();
+			self.SetFlashlightEnabled(Marshal.ToBool(args[0]));
+		}
+
+		static object getFlashlightEnabled(Context c, BarcodeScannerBase self, object[] args)
+		{
+			return self.GetFlashlightEnabled();
 		}
 	}
 }

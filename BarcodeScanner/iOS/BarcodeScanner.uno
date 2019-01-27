@@ -45,7 +45,8 @@ namespace Fuse.Controls.Native.iOS
 			public void Freeze() { Freeze(_handle); }
 			public void Unfreeze() { Unfreeze(_handle); }
 			public bool StartScanning(out string errorMessage) { return StartScanningImpl(_handle, out errorMessage); }
-			public void ToggleFlash() { ToggleFlash(_handle); }
+			public void EnableFlashlight() { EnableFlashlight(_handle); }
+			public bool IsFlashlightEnabled() { return IsFlashlightEnabled(_handle); }
 
 			[Foreign(Language.ObjC)]
 			static void Freeze(ObjC.Object scannerHandle)
@@ -90,10 +91,17 @@ namespace Fuse.Controls.Native.iOS
 			@}
 
 			[Foreign(Language.ObjC)]
-			static void ToggleFlash(ObjC.Object scannerHandle)
+			static void SetFlashlightEnabled(ObjC.Object scannerHandle, bool enabled)
 			@{
 				MTBBarcodeScanner* scanner = (MTBBarcodeScanner*)scannerHandle;
-				[scanner toggleTorch];
+				scanner.torchMode = enabled ? MTBTorchModeOn : MTBTorchModeOff;
+			@}
+			
+			[Foreign(Language.ObjC)]
+			static bool GetFlashlightEnabled(ObjC.Object scannerHandle)
+			@{
+				MTBBarcodeScanner* scanner = (MTBBarcodeScanner*)scannerHandle;
+				return scanner.torchMode == MTBTorchModeOn ? true : false;
 			@}
 		}
 
@@ -155,9 +163,14 @@ namespace Fuse.Controls.Native.iOS
 			return new ScanPromise(this, _scanner);
 		}
 
-		void IBarcodeScannerView.ToggleFlash()
+		void IBarcodeScannerView.SetFlashlightEnabled(bool enable)
 		{
-			_scanner.ToggleFlash();
+			_scanner.SetFlashlightEnabled(enable);
+		}
+
+		void IBarcodeScannerView.GetFlashlightEnabled()
+		{
+			return _scanner.GetFlashlightEnabled();
 		}
 
 		public override void Dispose()

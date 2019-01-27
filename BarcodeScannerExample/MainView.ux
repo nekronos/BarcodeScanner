@@ -26,12 +26,17 @@
 				}
 
 				function toggleFlash() {
-					BarcodeScanner.toggleFlash();
+					BarcodeScanner.setFlashlightEnabled(!BarcodeScanner.getFlashlightEnabled());
+				}
+
+				function flashOn() {
+					return BarcodeScanner.getFlashlightEnabled()
 				}
 
 				module.exports = {
 					scan: scan,
 					toggleFlash: toggleFlash,
+					flashOn: flashOn
 				}
 			</JavaScript>
 			<NativeViewHost Dock="Fill">
@@ -39,7 +44,13 @@
 			</NativeViewHost>
 			<StackPanel Dock="Bottom">
 				<Button Text="Scan" Clicked="{scan}" />
-				<Button Text="Toggle flashlight" Clicked="{toggleFlash}" />
+				<WhileTrue Value="{flashOn}">
+					<Button Text="Turn flashlight on" Clicked="{toggleFlash}" />
+				</WhileTrue>
+
+				<WhileFalse Value="{flashOn}">
+					<Button Text="Turn flashlight off" Clicked="{toggleFlash}" />
+				</WhileFalse>
 			</StackPanel>
 		</DockPanel>
 	</ClientPanel>

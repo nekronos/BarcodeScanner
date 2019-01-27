@@ -91,9 +91,15 @@ namespace Fuse.Controls.Native.Android
 			return session;
 		}
 
-		void IBarcodeScannerView.ToggleFlash()
+		void IBarcodeScannerView.SetFlashlightEnabled(bool enable)
 		{
-			_scannerView.ToggleFlash();
+			_scannerView.SetFlashlightEnabled(enable);
+		}
+
+
+		bool IBarcodeScannerView.GetFlashlightEnabled()
+		{
+			return _scannerView.GetFlashlightEnabled();
 		}
 
 		public override void Dispose()
@@ -168,9 +174,15 @@ namespace Fuse.Controls.Native.Android
 		@}
 
 		[Foreign(Language.Java)]
-		public static void ToggleFlash(this Java.Object scannerViewHandle)
+		public static void SetFlashlightEnabled(this Java.Object scannerViewHandle, bool enable)
 		@{
-			((ZXingScannerView)scannerViewHandle).toggleFlash();	
+			((ZXingScannerView)scannerViewHandle).setFlash(enable);	
+		@}
+
+		[Foreign(Language.Java)]
+		public static bool GetFlashlightEnabled(this Java.Object scannerViewHandle)
+		@{
+			return ((ZXingScannerView)scannerViewHandle).getFlash();	
 		@}
 	}
 }

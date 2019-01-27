@@ -8,7 +8,8 @@ namespace Fuse.Controls
 	interface IBarcodeScannerView
 	{
 		Future<string> Scan();
-		void ToggleFlash();
+		void SetFlashlightEnabled(bool enable);
+		bool GetFlashlightEnabled();
 	}
 
 	public abstract partial class BarcodeScannerBase : Panel
@@ -26,11 +27,20 @@ namespace Fuse.Controls
 			}
 		}
 
-		public void ToggleFlash()
+		public void SetFlashlightEnabled(bool enable)
 		{
 			var view = BarcodeScannerView;
 			if (view != null)
-				view.ToggleFlash();
+				view.SetFlashlightEnabled(enable);
+		}
+
+		public bool GetFlashlightEnabled()
+		{
+			var view = BarcodeScannerView;
+			if (view != null)
+				return view.GetFlashlightEnabled();
+
+			return false;
 		}
 
 		IBarcodeScannerView BarcodeScannerView
