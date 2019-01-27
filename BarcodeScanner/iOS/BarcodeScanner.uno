@@ -49,8 +49,9 @@ namespace Fuse.Controls.Native.iOS
 			public void Freeze() { Freeze(_handle); }
 			public void Unfreeze() { Unfreeze(_handle); }
 			public bool StartScanning(out string errorMessage) { return StartScanningImpl(_handle, out errorMessage); }
-			public void EnableFlashlight() { EnableFlashlight(_handle); }
-			public bool IsFlashlightEnabled() { return IsFlashlightEnabled(_handle); }
+			public void SetFlashlightEnabled(bool enabled) { SetFlashlightEnabled(_handle, enabled); }
+			public void StopScanning() { StopScanning(_handle); }
+			public bool GetFlashlightEnabled() { return GetFlashlightEnabled(_handle); }
 
 			[Foreign(Language.ObjC)]
 			static void Freeze(ObjC.Object scannerHandle)
@@ -68,6 +69,12 @@ namespace Fuse.Controls.Native.iOS
 			static bool IsScanningImpl(ObjC.Object scannerHandle)
 			@{
 				return ((MTBBarcodeScanner*)scannerHandle).isScanning;
+			@}
+
+			[Foreign(Language.ObjC)]
+			static void StopScanning(ObjC.Object scannerHandle)
+			@{
+				[((MTBBarcodeScanner*)scannerHandle) stopScanning];
 			@}
 
 			[Foreign(Language.ObjC)]
@@ -109,62 +116,64 @@ namespace Fuse.Controls.Native.iOS
 			@}
 		}
 
-		class ScanPromise : Promise<string>
+		[UXConstructor]
+		public BarcodeScanner([UXParameter("Host")]IBarcodeScannerHost host) : this(host, CreateView()) { }
+
+		BarcodeScanner(IBarcodeScannerHost host, ObjC.Object view) : this(host, view, CreateScanner(view)) {}
+
+		BarcodeScanner(IBarcodeScannerHost host, ObjC.Object view, ObjC.Object scanner) : base(view)
 		{
-			BarcodeScanner _barcodeScanner;
-			Scanner _scanner;
-
-			public ScanPromise(
-				BarcodeScanner barcodeScanner,
-				Scanner scanner)
-			{
-				_barcodeScanner = barcodeScanner;
-				_barcodeScanner._scanningSession = this;
-				_scanner = scanner;
-				_scanner.ResultEvent += OnGotResult;
-				_scanner.Unfreeze();
-			}
-
-			void OnGotResult(string code)
-			{
-				_scanner.Freeze();
-				_scanner.ResultEvent -= OnGotResult;
-				_barcodeScanner._scanningSession = null;
-				Resolve(code);
-			}
-
-		}
-
-		public BarcodeScanner() : this(CreateView()) { }
-
-		BarcodeScanner(ObjC.Object view) : this(view, CreateScanner(view)) {}
-
-		BarcodeScanner(ObjC.Object view, ObjC.Object scanner) : base(view)
-		{
+			_host = host;
 			_view = view;
 			_scanner = new Scanner(scanner);
-
-			string error = null;
-			var _ = _scanner.StartScanning(out error);
 		}
 
+		readonly IBarcodeScannerHost _host;
 		readonly ObjC.Object _view;
 		readonly Scanner _scanner;
 
-		object _scanningSession = null;
-
-		Future<string> IBarcodeScannerView.Scan()
+		bool _isStarted = false;
+		Future<object> IBarcodeScannerView.Start()
 		{
-			if (_scanningSession != null)
-				return new Promise<string>().RejectWithMessage("Scanning already in progress");
+			if (_isStarted)
+				return Reject("Scanner already started");
+			
+			string error = null;
+			if (!_scanner.StartScanning(out error))
+				return Reject("Failed to start scanner: " + error);
 
-			if (!_scanner.IsScanning)
-			{
-				string error = null;
-				if (_scanner.StartScanning(out error))
-					return new Promise<string>().RejectWithMessage(error);
-			}
-			return new ScanPromise(this, _scanner);
+			_isStarted = true;
+			_scanner.ResultEvent += _host.OnCodeScanned;
+			return Resolve();
+		}
+
+		Future<object> IBarcodeScannerView.Stop()
+		{
+			if (!_isStarted)
+				return Reject("Scanner already stopped");
+
+			_isStarted = false;
+			_scanner.StopScanning();
+			_scanner.ResultEvent -= _host.OnCodeScanned;
+			return Resolve();
+		}
+
+		Future<object> IBarcodeScannerView.Pause()
+		{
+			if (!_isStarted)
+				return Reject("Scanner not started");
+
+			_scanner.Freeze();
+			return Resolve();
+		}
+
+		Future<object> IBarcodeScannerView.Resume()
+		{
+			if (!_isStarted)
+				return Reject("Scanner not started");
+
+			_scanner.Unfreeze();
+			return Resolve();
 		}
 
 		void IBarcodeScannerView.SetFlashlightEnabled(bool enable)
@@ -172,10 +181,14 @@ namespace Fuse.Controls.Native.iOS
 			_scanner.SetFlashlightEnabled(enable);
 		}
 
-		void IBarcodeScannerView.GetFlashlightEnabled()
+		bool IBarcodeScannerView.GetFlashlightEnabled()
 		{
 			return _scanner.GetFlashlightEnabled();
 		}
+
+		Future<object> Reject(string message) { return new Promise<object>().RejectWithMessage(message); }
+
+		Future<object> Resolve() { return new Promise<object>(new object()); }
 
 		public override void Dispose()
 		{

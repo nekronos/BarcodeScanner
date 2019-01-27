@@ -6,6 +6,7 @@ using Uno.Threading;
 using Uno.Collections;
 using Fuse.Scripting;
 using Uno.Permissions;
+using Fuse.Controls;
 
 namespace BarcodeScanner
 {
@@ -26,7 +27,12 @@ namespace BarcodeScanner
 
 		static Future<PlatformPermission> RequestCamera(object[] args)
 		{
-			return Permissions.Request(Permissions.Android.CAMERA);
+			if defined(Android)
+			{
+				return Permissions.Request(Permissions.Android.CAMERA);
+			}
+			else
+				return new Promise<PlatformPermission>().RejectWithMessage("Platform not supported");
 		}
 
 		static string PermissionConverter(Fuse.Scripting.Context context, PlatformPermission permission)
