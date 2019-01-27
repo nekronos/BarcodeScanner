@@ -2,6 +2,17 @@
 	<ClientPanel>
 		<DockPanel>
 			<JavaScript>
+
+				var Permissions = require("BarcodeScanner/Permissions");
+
+				Permissions.requrestCamera()
+					.then(function () {
+						console.log("Got permission to use camera");
+					})
+					.catch(function (err) {
+						console.log("Failed to acquire camera permission: " + err);
+					})
+
 				var BarcodeScanner = barcodeScanner
 				function scan() {
 					BarcodeScanner

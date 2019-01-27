@@ -2,6 +2,7 @@
   "Packages": [
     "Fuse",
     "FuseJS",
+    "Fuse.Scripting",
     "Uno.Permissions"
   ],
   "Includes": [
