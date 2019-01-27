@@ -10,13 +10,17 @@ namespace Fuse.Controls.Native.iOS
 
 	delegate void ResultHandler(string code);
 
-	extern(!iOS) public class BarcodeScanner {}
+	extern(!iOS) internal class BarcodeScanner
+	{
+		[UXConstructor]
+		public BarcodeScanner([UXParameter("Host")]IBarcodeScannerHost host) {}
+	}
 
 	[Require("Source.Include", "UIKit/UIKit.h")]
 	[Require("Source.Include", "iOS/BarcodeView.h")]
 	[Require("Source.Include", "MTBBarcodeScanner/MTBBarcodeScanner.h")]
 	[Require("Cocoapods.Podfile.Target", "pod 'MTBBarcodeScanner'")]
-	extern(iOS) public class BarcodeScanner : ViewHandle, IBarcodeScannerView
+	extern(iOS) internal class BarcodeScanner : ViewHandle, IBarcodeScannerView
 	{
 
 		[Require("Source.Include", "UIKit/UIKit.h")]

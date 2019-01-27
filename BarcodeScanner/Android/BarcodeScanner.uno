@@ -3,12 +3,17 @@ using Uno.UX;
 using Uno.Threading;
 using Uno.Compiler.ExportTargetInterop;
 using Uno.Permissions;
+using Uno.Collections;
 
 using Fuse.Controls.Native;
 
 namespace Fuse.Controls.Native.Android
 {
-	extern(!ANDROID) public class BarcodeScanner {}
+	extern(!ANDROID) internal class BarcodeScanner
+	{
+		[UXConstructor]
+		public BarcodeScanner([UXParameter("Host")]IBarcodeScannerHost host) {}
+	}
 
 	[Require("Gradle.Dependency.Compile", "me.dm7.barcodescanner:zxing:1.9.1")]
 	[Require("AndroidManifest.Permission", "android.permission.CAMERA")]
@@ -18,77 +23,77 @@ namespace Fuse.Controls.Native.Android
 		"me.dm7.barcodescanner.core.IViewFinder",
 		"android.content.Context",
 		"android.graphics.Rect")]
-	extern(ANDROID) public class BarcodeScanner : ViewHandle, IBarcodeScannerView
+	extern(ANDROID) internal class BarcodeScanner : ViewHandle, IBarcodeScannerView
 	{
-		class ScanPromise : Promise<string>
+		[UXConstructor]
+		public BarcodeScanner([UXParameter("Host")]IBarcodeScannerHost host) : this(host, Create()) { }
+
+		BarcodeScanner(IBarcodeScannerHost host, Java.Object scannerView) : base(scannerView)
 		{
-			readonly Java.Object _scannerView;
-			readonly Java.Object _resultHandler;
-			readonly BarcodeScanner _barcodeScanner;
-
-			public ScanPromise(BarcodeScanner barcodeScanner, Java.Object scannerView)
-			{
-				_barcodeScanner = barcodeScanner;
-				_scannerView = scannerView;
-				_resultHandler = CreateResultHandler(OnGotResult);
-
-				Permissions.Request(new PlatformPermission[] { Permissions.Android.CAMERA }).Then(DoScan, Reject);
-				Fuse.Platform.Lifecycle.EnteringForeground += OnEnteringForeground;
-				Fuse.Platform.Lifecycle.EnteringBackground += OnEnteringBackground;
-			}
-
-			bool _inForeground = true;
-			void OnEnteringBackground(Fuse.Platform.ApplicationState s)
-			{
-				if (!_inForeground)
-					return;
-				_inForeground = false;
-			}
-
-			void OnEnteringForeground(Fuse.Platform.ApplicationState s)
-			{
-				if (_inForeground)
-					return;
-				_inForeground = true;
-				_scannerView.ResumeCameraPreview(_resultHandler);
-			}
-
-			void DoScan(PlatformPermission[] permission)
-			{
-				_scannerView.InstallResultHandler(_resultHandler);
-				_scannerView.StartCamera();
-			}
-
-			void OnGotResult(string code)
-			{
-				_barcodeScanner._scanningSession = null;
-				_scannerView.StopCamera();
-				_scannerView.RemoveResultHandler();
-				Fuse.Platform.Lifecycle.EnteringForeground -= OnEnteringForeground;
-				Fuse.Platform.Lifecycle.EnteringBackground -= OnEnteringBackground;
-				Resolve(code);
-			}
-		}
-
-		public BarcodeScanner() : this(Create()) { }
-
-		BarcodeScanner(Java.Object scannerView) : base(scannerView)
-		{
+			_host = host;
 			_scannerView = scannerView;
+			_resultHandler = CreateResultHandler(OnCodeScanned);
+			_scannerView.InstallResultHandler(_resultHandler);
+
+			Fuse.Platform.Lifecycle.EnteringForeground += OnEnteringForeground;
 		}
 
+		readonly IBarcodeScannerHost _host;
 		readonly Java.Object _scannerView;
+		readonly Java.Object _resultHandler;
 
 		object _scanningSession = null;
 
-		Future<string> IBarcodeScannerView.Scan()
-		{
-			if (_scanningSession != null)
-				return new Promise<string>().RejectWithMessage("Scanning already in progress");
+		void Start() { _scannerView.StartCamera(); }
+		void Stop() { _scannerView.StopCamera(); }
+		void Pause() { _scannerView.StopCameraPreview(); }
+		void Resume() { _scannerView.ResumeCameraPreview(_resultHandler); }
 
-			var session = new ScanPromise(this, _scannerView);
-			_scanningSession = session;
-			return session;
+		bool _isRunning = false;
+		Future<object> IBarcodeScannerView.Start()
+		{
+			if (!_isRunning)
+			{
+				Start();
+				_isRunning = true;
+				return Resolve();
+			}
+			else
+				return Reject("Scanner already running");
+		}
+
+		Future<object> IBarcodeScannerView.Stop()
+		{
+			if (_isRunning)
+			{
+				Stop();
+				_isRunning = false;
+				return Resolve();
+			}
+			else
+				return Reject("Scanner not running");
+		}
+
+		Future<object> IBarcodeScannerView.Pause()
+		{
+			if (_isRunning)
+			{
+				Pause();
+				return Resolve();
+			}
+			else
+				return Reject("Scanner not running");
+		}
+
+		Future<object> IBarcodeScannerView.Resume()
+		{
+			if (_isRunning)
+			{
+				Resume();
+				return Resolve();
+			}
+			else
+				return Reject("Scanner not running");
 		}
 
 		void IBarcodeScannerView.SetFlashlightEnabled(bool enable)
@@ -96,15 +101,36 @@ namespace Fuse.Controls.Native.Android
 			_scannerView.SetFlashlightEnabled(enable);
 		}
 
-
 		bool IBarcodeScannerView.GetFlashlightEnabled()
 		{
 			return _scannerView.GetFlashlightEnabled();
 		}
 
+		Future<object> Reject(string message) { return new Promise<object>().RejectWithMessage(message); }
+
+		Future<object> Resolve() { return new Promise<object>(new object()); }
+
+		void OnCodeScanned(string code)
+		{
+			_host.OnCodeScanned(code);
+			ResumeIfRunning();
+		}
+
+		void OnEnteringForeground(Fuse.Platform.ApplicationState s)
+		{
+			ResumeIfRunning();
+		}
+
+		void ResumeIfRunning()
+		{
+			if (_isRunning)
+				_scannerView.ResumeCameraPreview(_resultHandler);
+		}
+
 		public override void Dispose()
 		{
 			base.Dispose();
+			Fuse.Platform.Lifecycle.EnteringForeground -= OnEnteringForeground;
 		}
 
 		[Foreign(Language.Java)]
@@ -153,6 +179,12 @@ namespace Fuse.Controls.Native.Android
 		public static void StopCamera(this Java.Object handle)
 		@{
 			((ZXingScannerView)handle).stopCamera();
+		@}
+
+		[Foreign(Language.Java)]
+		public static void StopCameraPreview(this Java.Object handle)
+		@{
+			((ZXingScannerView)handle).stopCameraPreview();
 		@}
 
 		[Foreign(Language.Java)]

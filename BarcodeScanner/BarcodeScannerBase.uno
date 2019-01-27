@@ -4,48 +4,60 @@ using Uno.Threading;
 
 namespace Fuse.Controls
 {
-
 	interface IBarcodeScannerView
 	{
-		Future<string> Scan();
 		void SetFlashlightEnabled(bool enable);
 		bool GetFlashlightEnabled();
+		Future<object> Start();
+		Future<object> Stop();
+		Future<object> Pause();
+		Future<object> Resume();
 	}
 
-	public abstract partial class BarcodeScannerBase : Panel
+	internal interface IBarcodeScannerHost
 	{
-		public Future<string> Scan()
+		void OnCodeScanned(string code);
+	}
+
+	public abstract partial class BarcodeScannerBase : Panel, IBarcodeScannerHost
+	{
+
+		public event EventHandler<string> CodeScanned;
+
+		void IBarcodeScannerHost.OnCodeScanned(string code)
 		{
-			var view = BarcodeScannerView;
-			if (view != null)
-				return view.Scan();
-			else
-			{
-				var p = new Promise<string>();
-				p.Reject(new Exception("Native view not initialized!"));
-				return p;
-			}
+			var handler = CodeScanned;
+			if (handler != null)
+				handler(this, code);
 		}
 
-		public void SetFlashlightEnabled(bool enable)
-		{
-			var view = BarcodeScannerView;
-			if (view != null)
-				view.SetFlashlightEnabled(enable);
-		}
-
-		public bool GetFlashlightEnabled()
-		{
-			var view = BarcodeScannerView;
-			if (view != null)
-				return view.GetFlashlightEnabled();
-
-			return false;
-		}
+		public void SetFlashlightEnabled(bool enable) { BarcodeScannerView.SetFlashlightEnabled(enable); }
+		public bool GetFlashlightEnabled() { return BarcodeScannerView.GetFlashlightEnabled(); }
+		public Future<object> Start() { return BarcodeScannerView.Start(); }
+		public Future<object> Stop() { return BarcodeScannerView.Stop(); }
+		public Future<object> Resume() { return BarcodeScannerView.Resume(); }
+		public Future<object> Pause() { return BarcodeScannerView.Pause(); }
 
 		IBarcodeScannerView BarcodeScannerView
 		{
-			get { return ViewHandle as IBarcodeScannerView; }
+			get { return (ViewHandle as IBarcodeScannerView) ?? DummyBarcodeScannerView.Instance; }
+		}
+
+		class DummyBarcodeScannerView : IBarcodeScannerView
+		{
+			Future<T> Reject<T>() { return new Promise<T>().RejectWithMessage("Native view not initialized!"); }
+			
+			Future<object> IBarcodeScannerView.Start() { return Reject<object>(); }
+			Future<object> IBarcodeScannerView.Stop() { return Reject<object>(); }
+			Future<object> IBarcodeScannerView.Pause() { return Reject<object>(); }
+			Future<object> IBarcodeScannerView.Resume() { return Reject<object>(); }
+
+			void IBarcodeScannerView.SetFlashlightEnabled(bool enable) { }
+			bool IBarcodeScannerView.GetFlashlightEnabled() { return false; }
+
+			DummyBarcodeScannerView() {}
+
+			public static readonly IBarcodeScannerView Instance = new DummyBarcodeScannerView();
 		}
 	}
 }
