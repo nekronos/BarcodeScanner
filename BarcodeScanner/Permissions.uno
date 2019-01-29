@@ -6,7 +6,6 @@ using Uno.Threading;
 using Uno.Collections;
 using Fuse.Scripting;
 using Uno.Permissions;
-using Fuse.Controls;
 
 namespace BarcodeScanner
 {
@@ -22,17 +21,25 @@ namespace BarcodeScanner
 
 			Resource.SetGlobalKey(_instance = this, "BarcodeScanner/Permissions");
 
-			AddMember(new NativePromise<PlatformPermission, string>("requrestCamera", RequestCamera, PermissionConverter));
-		}
-
-		static Future<PlatformPermission> RequestCamera(object[] args)
-		{
-			if defined(Android)
+			// TODO: fix request camera implementation
+			if defined(ANDROID)
 			{
-				return Permissions.Request(Permissions.Android.CAMERA);
+				AddMember(new NativePromise<PlatformPermission, string>("requrestCamera", RequestCamera, PermissionConverter));	
 			}
 			else
-				return new Promise<PlatformPermission>().RejectWithMessage("Platform not supported");
+			{
+				AddMember(new NativePromise<string, string>("requrestCamera", RequestCamera));
+			}
+		}
+
+		extern(!ANDROID) static Future<string> RequestCamera(object[] args)
+		{
+			return new Promise<string>("Camera permission not needed");
+		}
+
+		extern(ANDROID) static Future<PlatformPermission> RequestCamera(object[] args)
+		{
+			return Permissions.Request(Permissions.Android.CAMERA);
 		}
 
 		static string PermissionConverter(Fuse.Scripting.Context context, PlatformPermission permission)
