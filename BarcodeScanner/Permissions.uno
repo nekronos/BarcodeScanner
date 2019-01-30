@@ -13,38 +13,41 @@ namespace BarcodeScanner
 	public class PermissionsModule : NativeModule
 	{
 		static readonly PermissionsModule _instance;
-		
+
 		public PermissionsModule()
 		{
 			if (_instance != null)
 				return;
 
 			Resource.SetGlobalKey(_instance = this, "BarcodeScanner/Permissions");
+			AddMember(new NativePromise<string, string>("requrestCamera", RequestCamera));
+		}
 
-			// TODO: fix request camera implementation
+		extern(ANDROID) class CameraPermissionRequest : Promise<string>
+		{
+			public CameraPermissionRequest()
+			{
+				Permissions
+					.Request(Permissions.Android.CAMERA)
+					.Then(OnResolve, Reject);
+			}
+
+			void OnResolve(PlatformPermission permission)
+			{
+				Resolve(permission.Name);
+			}
+		}
+
+		static Future<string> RequestCamera(object[] args)
+		{
 			if defined(ANDROID)
 			{
-				AddMember(new NativePromise<PlatformPermission, string>("requrestCamera", RequestCamera, PermissionConverter));	
+				return new CameraPermissionRequest();
 			}
 			else
 			{
-				AddMember(new NativePromise<string, string>("requrestCamera", RequestCamera));
+				return new Promise<string>("Camera permission not needed");
 			}
-		}
-
-		extern(!ANDROID) static Future<string> RequestCamera(object[] args)
-		{
-			return new Promise<string>("Camera permission not needed");
-		}
-
-		extern(ANDROID) static Future<PlatformPermission> RequestCamera(object[] args)
-		{
-			return Permissions.Request(Permissions.Android.CAMERA);
-		}
-
-		static string PermissionConverter(Fuse.Scripting.Context context, PlatformPermission permission)
-		{
-			return permission.Name;
 		}
 	}
 }
