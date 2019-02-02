@@ -13,3 +13,5 @@ You need the latest version of xcode and [cocoapods](https://cocoapods.org/).
 
 ### Android
 `uno build -t=android -DGRADLE`
+
+Android by default uses the `zbar` library. Alternatively build with `-DZXING` to use the `zxing` library
