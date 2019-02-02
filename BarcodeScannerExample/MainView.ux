@@ -2,7 +2,10 @@
 	<ClientPanel>
 		<DockPanel>
 			<JavaScript>
+				var Observable = require("FuseJS/Observable");
 				var Permissions = require("BarcodeScanner/Permissions");
+
+				var code = Observable("N/A");
 
 				Permissions
 					.requrestCamera()
@@ -11,8 +14,9 @@
 
 				var BarcodeScanner = barcodeScanner
 
-				BarcodeScanner.onCodeScanned(code => {
-					console.log("Code scanned: " + code);
+				BarcodeScanner.onCodeScanned(result => {
+					console.log("Code scanned: " + result);
+					code.value = result;
 				})
 
 				function toggleFlash() {
@@ -54,13 +58,18 @@
 					start,
 					stop,
 					pause,
-					resume
+					resume,
+					code
 				}
 			</JavaScript>
 			<NativeViewHost Dock="Fill">
 				<BarcodeScanner ux:Name="barcodeScanner" />
 			</NativeViewHost>
 			<StackPanel Dock="Bottom">
+				<StackPanel Margin="10">
+					<Text>Code:</Text>
+					<Text Value="{code}" />
+				</StackPanel>
 				<Button Text="Start" Clicked="{start}" />
 				<Button Text="Stop" Clicked="{stop}" />
 				<Button Text="Pause" Clicked="{pause}" />
